@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { z } from "zod";
-import { canSuperAdmin, getSession } from "@/lib/auth";
+import { canAdminister, canSuperAdmin, getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DEFAULT_NAV, type NavKey, type NavOverride } from "@/lib/system";
 
@@ -156,6 +156,52 @@ export async function updateNavAction(
   revalidatePath("/system");
 
   return { ok: true, message: "Navigation and feature flags updated." };
+}
+
+export async function updateEmailTemplatesAction(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session || (!canSuperAdmin(session.role) && !canAdminister(session.role))) {
+    return { ok: false, error: "Admin or Super Admin only." };
+  }
+
+  const schema = z.object({
+    emailIncludeLogo: z.boolean(),
+    emailApprovedMessage: z.string().min(10).max(4000),
+    emailDeniedMessage: z.string().min(10).max(4000),
+    emailCancelledMessage: z.string().min(10).max(4000),
+  });
+
+  const parsed = schema.safeParse({
+    emailIncludeLogo: formData.get("emailIncludeLogo") === "on",
+    emailApprovedMessage: String(formData.get("emailApprovedMessage") || "").trim(),
+    emailDeniedMessage: String(formData.get("emailDeniedMessage") || "").trim(),
+    emailCancelledMessage: String(formData.get("emailCancelledMessage") || "").trim(),
+  });
+
+  if (!parsed.success) return { ok: false, error: "Check email message fields." };
+
+  await prisma.systemSettings.upsert({
+    where: { id: "default" },
+    create: { id: "default", ...parsed.data },
+    update: parsed.data,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session.id,
+      action: "UPDATE_EMAIL_TEMPLATES",
+      entity: "SystemSettings",
+      entityId: "default",
+    },
+  });
+
+  revalidatePath("/system");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Email messages saved. New leave emails will use this copy and logo." };
 }
 
 export async function createDepartmentAction(

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Palette, PanelsTopLeft, Building2, Users, Upload, ExternalLink } from "lucide-react";
+import { Palette, PanelsTopLeft, Building2, Users, Upload, ExternalLink, Mail } from "lucide-react";
 import { BrandingForm } from "@/components/system/branding-form";
 import { DepartmentForm } from "@/components/system/department-form";
+import { EmailTemplatesForm } from "@/components/system/email-templates-form";
 import { NavForm } from "@/components/system/nav-form";
 import { canSuperAdmin, getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -107,6 +108,12 @@ export default async function SystemStudioPage() {
             href: "#departments",
           },
           {
+            icon: Mail,
+            title: "Email messages",
+            body: "Approve / deny / cancel copy + logo",
+            href: "#emails",
+          },
+          {
             icon: Users,
             title: "Workforce",
             body: "Users + Excel/CSV import",
@@ -130,6 +137,19 @@ export default async function SystemStudioPage() {
 
       <div id="branding">
         <BrandingForm settings={settings} />
+      </div>
+
+      <div id="emails">
+        <EmailTemplatesForm
+          settings={{
+            emailIncludeLogo: settings.emailIncludeLogo,
+            emailApprovedMessage: settings.emailApprovedMessage,
+            emailDeniedMessage: settings.emailDeniedMessage,
+            emailCancelledMessage: settings.emailCancelledMessage,
+            logoUrl: settings.logoUrl,
+            companyName: settings.companyName,
+          }}
+        />
       </div>
 
       <div id="navigation">

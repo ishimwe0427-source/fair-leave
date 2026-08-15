@@ -11,12 +11,14 @@ import {
 import { DepartmentManager } from "@/components/admin/department-manager";
 import { LeaveWorkflowForm } from "@/components/admin/leave-workflow-form";
 import { OrgRoleManager } from "@/components/admin/org-role-manager";
+import { EmailTemplatesForm } from "@/components/system/email-templates-form";
 import { canAdminister, canSuperAdmin, getSession } from "@/lib/auth";
 import { ensureBaselineCatalog } from "@/lib/bootstrap";
 import { prisma } from "@/lib/db";
 import { isEmailConfigured } from "@/lib/email";
 import { assignableRoles } from "@/lib/roles";
 import { DEFAULT_FEATURES, type FeatureFlags } from "@/lib/system";
+import { getSystemSettings } from "@/lib/system";
 
 export default async function AdminPage() {
   const session = await getSession();
@@ -25,6 +27,7 @@ export default async function AdminPage() {
 
   await ensureBaselineCatalog(prisma);
   const emailReady = isEmailConfigured();
+  const systemSettings = await getSystemSettings();
 
   const [leaveTypes, policies, holidays, blackouts, departments, orgRoles, users, settings] =
     await Promise.all([
@@ -91,12 +94,25 @@ export default async function AdminPage() {
         </p>
         <p className="mt-1 text-xs leading-relaxed opacity-90">
           {emailReady
-            ? "Welcome emails and leave decisions will be sent to each user’s registered address."
-            : "Fill SMTP_USER + SMTP_PASS in .env (Gmail App Password — see docs/EMAIL.md), then restart. In development without SMTP, FairLeave uses Ethereal test mail and prints a preview URL in the terminal."}
+            ? "Welcome emails, password resets, and leave approve/deny/cancel notices go to each user’s registered address (Gmail or company email). The same result also appears on their dashboard."
+            : "Fill SMTP_USER + SMTP_PASS in .env (Gmail App Password — see docs/EMAIL.md), then restart. In development without SMTP, FairLeave uses Ethereal test mail and prints a preview URL in the terminal. Dashboard notifications still work either way."}
         </p>
       </div>
 
       <LeaveWorkflowForm requireManagerApproval={Boolean(flags.requireManagerApproval)} />
+
+      <div id="emails">
+        <EmailTemplatesForm
+          settings={{
+            emailIncludeLogo: systemSettings.emailIncludeLogo,
+            emailApprovedMessage: systemSettings.emailApprovedMessage,
+            emailDeniedMessage: systemSettings.emailDeniedMessage,
+            emailCancelledMessage: systemSettings.emailCancelledMessage,
+            logoUrl: systemSettings.logoUrl,
+            companyName: systemSettings.companyName,
+          }}
+        />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">

@@ -216,6 +216,26 @@ export async function importWorkersAction(
         });
 
         await ensureUserBalances(user.id, user.country);
+        await prisma.notification.create({
+          data: {
+            userId: user.id,
+            type: "ACCOUNT_CREATED",
+            title: "Welcome to FairLeave",
+            body: "Your leave account is ready. Check your email for the login link and temporary password, then change it in Settings.",
+            href: "/settings",
+          },
+        });
+        try {
+          const { sendWelcomeAccountEmail } = await import("@/lib/email");
+          await sendWelcomeAccountEmail({
+            to: user.email,
+            firstName: user.firstName,
+            email: user.email,
+            tempPassword: item.tempPassword,
+          });
+        } catch {
+          // Import continues even if one welcome email fails
+        }
         credentials.push({
           email: user.email,
           employeeCode: user.employeeCode,

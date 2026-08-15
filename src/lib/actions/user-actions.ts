@@ -135,7 +135,7 @@ export async function createUserAction(
       userId: user.id,
       type: "ACCOUNT_CREATED",
       title: "Welcome to FairLeave",
-      body: "Your leave account is ready. Use the temporary password from your welcome email, then change it in Settings.",
+      body: "Your leave account is ready. Check your email for the login link and temporary password, then change it in Settings.",
       href: "/settings",
     },
   });
@@ -325,7 +325,7 @@ export async function resetUserPasswordAction(
       userId,
       type: "CREDENTIALS_ISSUED",
       title: "Password reset",
-      body: "Your password was reset by an administrator. Use the temporary password provided by HR.",
+      body: "Your password was reset. Check your email for the temporary password, then change it in Settings.",
       href: "/settings",
     },
   });
@@ -339,9 +339,18 @@ export async function resetUserPasswordAction(
     },
   });
 
+  const { sendPasswordResetEmail } = await import("@/lib/email");
+  await sendPasswordResetEmail({
+    to: existing.email,
+    firstName: existing.firstName,
+    email: existing.email,
+    tempPassword,
+  });
+
   return {
     ok: true,
-    message: "Temporary password generated. Copy it now — it won't be shown again.",
+    message:
+      "Temporary password generated and emailed to the user (if SMTP is configured). Copy it below as backup — it won't be shown again.",
     tempPassword,
   };
 }

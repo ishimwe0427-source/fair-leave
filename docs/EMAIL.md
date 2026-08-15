@@ -50,4 +50,16 @@ Ask your IT team for host, port, user, and password. Port `465` usually needs `S
    - `[FairLeave email sent]` → real SMTP delivered the message.
    - Auth / connection errors → wrong password, host, or blocked login.
 
-`SMTP_USER` and `SMTP_PASS` are required for real inbox delivery. Until then (in development), FairLeave uses Ethereal and prints a preview link. Temp passwords still show once on the create-user screen.
+`SMTP_USER` and `SMTP_PASS` are required for real inbox delivery (Gmail, Outlook, company mail). Until then (in development), FairLeave uses Ethereal and prints a preview link. Temp passwords still show once on the create-user screen.
+
+## What gets emailed
+
+| Event | Email | Dashboard notification |
+|-------|--------|-------------------------|
+| New user created (single or bulk import) | Welcome + login link + temporary password | Yes |
+| Admin resets password | New temporary password + login link | Yes |
+| Leave finally approved | Approval details + links | Yes |
+| Leave denied | Denial + note + links | Yes |
+| Leave cancelled | Cancellation notice | Yes |
+
+Intermediate approval stages (manager/HR) notify approvers in-app; the employee gets the official email when the **final** decision is made.

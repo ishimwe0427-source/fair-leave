@@ -347,6 +347,12 @@ model SystemSettings {
   showLandingStats Boolean @default(true)
   showMarketingPage Boolean @default(true)
   employeeCodePrefix String @default("FC")
+  /// Show company logo at top of outbound emails
+  emailIncludeLogo Boolean @default(true)
+  /// Custom message body for approved leave (supports {{firstName}} {{leaveType}} {{dates}} {{days}} {{comment}} {{companyName}})
+  emailApprovedMessage String @default("Great news — your {{leaveType}} leave has been fully approved.\n\nDates: {{dates}}\nDays: {{days}}\n\n{{comment}}\n\nYou can also see this on your FairLeave dashboard.") @db.Text
+  emailDeniedMessage String @default("After review, your {{leaveType}} leave request ({{dates}}, {{days}} day(s)) was not approved.\n\n{{comment}}\n\nPlease speak with HR if you need help adjusting dates. This decision is also on your dashboard.") @db.Text
+  emailCancelledMessage String @default("Your {{leaveType}} leave ({{dates}}, {{days}} day(s)) was cancelled.\n\nYou can also see this update on your dashboard.") @db.Text
   /// JSON array of nav item overrides: [{ key, label, hidden }]
   navConfig       Json?
   /// JSON feature flags

@@ -823,6 +823,27 @@ export async function cancelLeaveAction(requestId: string): Promise<ActionResult
         entityId: request.id,
       },
     });
+
+    await tx.notification.create({
+      data: {
+        userId: request.userId,
+        type: "REQUEST_REJECTED",
+        title: "Leave request cancelled",
+        body: `Your ${request.leaveType.name} leave (${format(request.startDate, "dd MMM")} – ${format(request.endDate, "dd MMM yyyy")}) was cancelled.`,
+        href: "/requests",
+      },
+    });
+  });
+
+  const { sendLeaveCancelledEmail } = await import("@/lib/email");
+  await sendLeaveCancelledEmail({
+    to: request.user.email,
+    firstName: request.user.firstName,
+    leaveType: request.leaveType.name,
+    startLabel: format(request.startDate, "dd MMM yyyy"),
+    endLabel: format(request.endDate, "dd MMM yyyy"),
+    days: request.days,
+    bySelf: request.userId === session.id,
   });
 
   revalidatePath("/dashboard");
@@ -830,5 +851,8 @@ export async function cancelLeaveAction(requestId: string): Promise<ActionResult
   revalidatePath("/calendar");
   revalidatePath("/approvals");
 
-  return { ok: true, message: "Request cancelled." };
+  return {
+    ok: true,
+    message: "Request cancelled. Employee notified on dashboard and by email.",
+  };
 }

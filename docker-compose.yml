@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fair-leave-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fairleave
+      POSTGRES_PASSWORD: fairleave_dev
+      POSTGRES_DB: fair_leave
+    ports:
+      - "55433:5432"
+    volumes:
+      - fair_leave_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fairleave -d fair_leave"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  fair_leave_pg:

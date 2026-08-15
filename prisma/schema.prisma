@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  HR
+  HR_ADMIN
+  ADMIN
+  MD
+  GM
+  SUPER_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNSPECIFIED
+}
+
+enum GenderEligibility {
+  ALL
+  FEMALE
+  MALE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LeaveRequestStatus {
+  DRAFT
+  PENDING
+  PENDING_MANAGER
+  PENDING_HR
+  PENDING_EXECUTIVE
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum NotificationType {
+  REQUEST_SUBMITTED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  REQUEST_CANCELLED
+  APPROVAL_NEEDED
+  LEAVE_REMINDER
+  ACCOUNT_CREATED
+  BALANCE_UPDATED
+  SYSTEM
+  CREDENTIALS_ISSUED
+}
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+
+  @@index([active])
+}
+
+/// Company-managed roles. System rows map to workflow Role; custom rows pick a baseRole for permissions.
+model OrgRole {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  active      Boolean  @default(true)
+  isSystem    Boolean  @default(false)
+  baseRole    Role     @default(EMPLOYEE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@index([active])
+  @@index([baseRole])
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  employeeCode       String     @unique
+  role               Role       @default(EMPLOYEE)
+  gender             Gender     @default(UNSPECIFIED)
+  status             UserStatus @default(ACTIVE)
+  jobTitle           String?
+  phone              String?
+  country            String     @default("RW")
+  timezone           String     @default("Africa/Kigali")
+  locale             String     @default("en")
+  avatarColor        String     @default("#d32f2f")
+  hireDate           DateTime
+  departmentId       String?
+  orgRoleId          String?
+  managerId          String?
+  mustChangePassword Boolean    @default(false)
+  lastLoginAt        DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil        DateTime?
+  sessionVersion     Int        @default(0)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  orgRole    OrgRole?    @relation(fields: [orgRoleId], references: [id])
+  manager    User?       @relation("UserManager", fields: [managerId], references: [id])
+  reports    User[]      @relation("UserManager")
+
+  leaveBalances   LeaveBalance[]
+  leaveRequests   LeaveRequest[]  @relation("RequestOwner")
+  approvalsGiven  LeaveApproval[] @relation("Approver")
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  importJobs      ImportJob[]
+  authSessions    AuthSession[]
+
+  @@index([departmentId])
+  @@index([orgRoleId])
+  @@index([managerId])
+  @@index([role])
+  @@index([status])
+  @@index([status, role])
+  @@index([createdAt])
+  @@index([lastName, firstName])
+  @@index([lockedUntil])
+}
+
+model AuthSession {
+  id         String    @id @default(cuid())
+  userId     String
+  /// Random session secret hash (never store raw token)
+  tokenHash  String    @unique
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model LeaveType {
+  id               String            @id @default(cuid())
+  name             String
+  code             String            @unique
+  description      String?
+  color            String            @default("#d32f2f")
+  paid             Boolean           @default(true)
+  requiresDoc      Boolean           @default(false)
+  allowHalfDay     Boolean           @default(true)
+  eligibleGender   GenderEligibility @default(ALL)
+  active           Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  policies LeavePolicy[]
+  balances LeaveBalance[]
+  requests LeaveRequest[]
+}
+
+model LeavePolicy {
+  id              String   @id @default(cuid())
+  leaveTypeId     String
+  country         String   @default("RW")
+  entitlementDays Float
+  carryOverMax    Float    @default(5)
+  minNoticeDays   Int      @default(1)
+  maxConsecutive  Int?
+  accrualMonthly  Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([leaveTypeId, country])
+}
+
+model LeaveBalance {
+  id          String   @id @default(cuid())
+  userId      String
+  leaveTypeId String
+  year        Int
+  entitled    Float    @default(0)
+  used        Float    @default(0)
+  pending     Float    @default(0)
+  carried     Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leaveTypeId, year])
+  @@index([year])
+  @@index([userId])
+}
+
+model LeaveRequest {
+  id         String             @id @default(cuid())
+  userId     String
+  leaveTypeId String
+  startDate  DateTime           @db.Date
+  endDate    DateTime           @db.Date
+  days       Float
+  halfDay    Boolean            @default(false)
+  reason     String
+  status     LeaveRequestStatus @default(PENDING)
+  attachment String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  decidedAt  DateTime?
+
+  user      User            @relation("RequestOwner", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType       @relation(fields: [leaveTypeId], references: [id])
+  approvals LeaveApproval[]
+
+  @@index([userId, status])
+  @@index([startDate, endDate])
+  @@index([status])
+}
+
+model LeaveApproval {
+  id         String         @id @default(cuid())
+  requestId  String
+  approverId String
+  level      Int            @default(1)
+  status     ApprovalStatus @default(PENDING)
+  comment    String?
+  actedAt    DateTime?
+  createdAt  DateTime       @default(now())
+
+  request  LeaveRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approver User         @relation("Approver", fields: [approverId], references: [id])
+
+  @@index([approverId, status])
+  @@index([requestId])
+}
+
+model Holiday {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime @db.Date
+  country   String   @default("RW")
+  recurring Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([country, date])
+}
+
+model BlackoutPeriod {
+  id           String   @id @default(cuid())
+  name         String
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  departmentId String?
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  @@index([startDate, endDate])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  href      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+/// Singleton-style white-label configuration for each buyer company.
+model SystemSettings {
+  id              String   @id @default("default")
+  companyName     String   @default("Fair Construction Ltd")
+  productName     String   @default("FairLeave")
+  tagline         String   @default("Enterprise leave operations")
+  supportEmail    String   @default("support@fairconstruction.rw")
+  logoUrl         String   @default("/branding/fair-construction-logo.png")
+  faviconUrl      String?
+  primaryColor    String   @default("#d32f2f")
+  secondaryColor  String   @default("#111827")
+  canvasColor     String   @default("#eef2f6")
+  accentColor     String   @default("#fdecec")
+  designPreset    String   @default("industrial")
+  loginTitle      String   @default("Sign in to FairLeave")
+  loginSubtitle   String   @default("Enterprise leave operations for your workforce.")
+  landingHeadline String   @default("Leave that keeps sites moving")
+  landingBody     String   @default("A powerful international leave operating system for construction and field-heavy companies.")
+  footerText      String   @default("Enterprise leave management")
+  showLandingStats Boolean @default(true)
+  showMarketingPage Boolean @default(true)
+  employeeCodePrefix String @default("FC")
+  /// JSON array of nav item overrides: [{ key, label, hidden }]
+  navConfig       Json?
+  /// JSON feature flags
+  featureFlags    Json?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+model ImportJob {
+  id             String          @id @default(cuid())
+  filename       String
+  status         ImportJobStatus @default(PENDING)
+  totalRows      Int             @default(0)
+  successCount   Int             @default(0)
+  errorCount     Int             @default(0)
+  skippedCount   Int             @default(0)
+  /// Row-level errors for review
+  errors         Json?
+  /// Temporary credentials CSV path (download once, then clear)
+  credentialsPath String?
+  createdById    String
+  createdAt      DateTime        @default(now())
+  completedAt    DateTime?
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([createdById])
+}

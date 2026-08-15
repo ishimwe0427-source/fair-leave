@@ -79,6 +79,9 @@ export function LoginForm({
         <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
           Protected session · CSRF · lockout after failed attempts · 12h expiry
         </p>
+        <div className="mt-4 rounded-xl border border-border bg-canvas/80 px-3 py-2.5 text-center text-[11px] text-muted-foreground">
+          Demo tip: ask your host for role accounts — then explore Approvals, Users, and System Studio.
+        </div>
       </div>
     </div>
   );

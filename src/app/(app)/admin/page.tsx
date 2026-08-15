@@ -105,6 +105,7 @@ export default async function AdminPage() {
         <EmailTemplatesForm
           settings={{
             emailIncludeLogo: systemSettings.emailIncludeLogo,
+            emailWelcomeMessage: systemSettings.emailWelcomeMessage,
             emailApprovedMessage: systemSettings.emailApprovedMessage,
             emailDeniedMessage: systemSettings.emailDeniedMessage,
             emailCancelledMessage: systemSettings.emailCancelledMessage,

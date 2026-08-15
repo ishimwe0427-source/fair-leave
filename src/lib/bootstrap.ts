@@ -169,6 +169,15 @@ export async function ensureBaselineCatalog(db: PrismaClient) {
       showLandingStats: true,
       showMarketingPage: true,
       employeeCodePrefix: "FC",
+      emailIncludeLogo: true,
+      emailWelcomeMessage:
+        "Welcome {{firstName}}!\n\nYour leave account at {{companyName}} is ready. Sign in with the temporary password below, then change it in Settings for your security.\n\nWe are glad to have you on the team.",
+      emailApprovedMessage:
+        "Dear {{firstName}},\n\nExcellent news — your {{leaveType}} request has been fully approved.\n\nPeriod: {{dates}}\nDuration: {{days}} day(s)\n\n{{comment}}\n\nPlease enjoy your time away. Coverage planning is handled. You can also review this decision anytime on your dashboard.",
+      emailDeniedMessage:
+        "Dear {{firstName}},\n\nThank you for your {{leaveType}} request. After careful review, it was not approved for the period {{dates}} ({{days}} day(s)).\n\n{{comment}}\n\nPlease contact HR if you would like to adjust dates or discuss options. This update is also available on your dashboard.",
+      emailCancelledMessage:
+        "Dear {{firstName}},\n\nYour {{leaveType}} leave for {{dates}} ({{days}} day(s)) has been cancelled.\n\n{{comment}}\n\nYou can submit a new request anytime from FairLeave.",
     },
     update: {},
   });

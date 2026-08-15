@@ -169,6 +169,7 @@ export async function updateEmailTemplatesAction(
 
   const schema = z.object({
     emailIncludeLogo: z.boolean(),
+    emailWelcomeMessage: z.string().min(10).max(4000),
     emailApprovedMessage: z.string().min(10).max(4000),
     emailDeniedMessage: z.string().min(10).max(4000),
     emailCancelledMessage: z.string().min(10).max(4000),
@@ -176,6 +177,7 @@ export async function updateEmailTemplatesAction(
 
   const parsed = schema.safeParse({
     emailIncludeLogo: formData.get("emailIncludeLogo") === "on",
+    emailWelcomeMessage: String(formData.get("emailWelcomeMessage") || "").trim(),
     emailApprovedMessage: String(formData.get("emailApprovedMessage") || "").trim(),
     emailDeniedMessage: String(formData.get("emailDeniedMessage") || "").trim(),
     emailCancelledMessage: String(formData.get("emailCancelledMessage") || "").trim(),

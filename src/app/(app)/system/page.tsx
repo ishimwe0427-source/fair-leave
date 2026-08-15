@@ -143,6 +143,7 @@ export default async function SystemStudioPage() {
         <EmailTemplatesForm
           settings={{
             emailIncludeLogo: settings.emailIncludeLogo,
+            emailWelcomeMessage: settings.emailWelcomeMessage,
             emailApprovedMessage: settings.emailApprovedMessage,
             emailDeniedMessage: settings.emailDeniedMessage,
             emailCancelledMessage: settings.emailCancelledMessage,

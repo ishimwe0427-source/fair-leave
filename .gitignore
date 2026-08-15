@@ -58,3 +58,6 @@ next-env.d.ts
 /private
 /public/branding/uploads
 /public/uploads
+
+.vercel
+.env*

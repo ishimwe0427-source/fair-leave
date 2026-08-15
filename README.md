@@ -10,7 +10,12 @@ Enterprise leave management system — multi-stage approvals, departments & role
 
 ## Live / share
 
-Deploy to Vercel with a hosted Postgres (`DATABASE_URL`) and set `AUTH_SECRET` (32+ chars) + `NEXT_PUBLIC_APP_URL` to your Vercel URL.
+**Production:** https://fair-leave.vercel.app  
+**GitHub:** https://github.com/ishimwe0427-source/fair-leave  
+
+Connected to your Vercel project + GitHub — new pushes to `main` can redeploy automatically.
+
+Hosted Postgres is required (`DATABASE_URL`). Claim/keep the Prisma DB so it does not auto-delete after the trial window.
 
 ## Documentation
 
